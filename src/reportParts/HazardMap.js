@@ -198,7 +198,11 @@ const getScreenshot = async function(url, hazardCode) {
   //     once:true
   //   });
 
-  await reactiveUtils.once(() => !view.updating);
+  await reactiveUtils.once(() => !view.updating,
+  () => {
+    console.log('VIEWUPDATING', view.updating);
+  }
+  );
 
   // map width is 8.5" - 0.78" (default print margins for Chrome on macOS) * 300 dpi
   // height is golden ratio
