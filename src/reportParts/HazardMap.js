@@ -15,14 +15,12 @@ let view;
 let scaleBar;
 
 export default props => {
-  console.log('HazardMap.render', props);
   const [ visualAssets, setVisualAssets ] = useState({});
   const [ mapLoading, setMapLoading ] = useState(false);
   const [ mapLoaded, setMapLoaded ] = useState(false);
   const { registerProgressItem, setProgressItemAsComplete } = useContext(ProgressContext);
 
   const createMap = async () => {
-    console.log('HazardMap.createMap');
 
     setMapLoading(true);
 
@@ -47,7 +45,6 @@ export default props => {
     map = new WebMap({
       portalItem: { id: config.webMaps.hazard }
     });
-    console.log('map created');
 
     view = new MapView({
       map,
@@ -91,14 +88,14 @@ export default props => {
 
   useEffect(() => {
     const getScreenshots = async () => {
-      console.log('getScreenshots', props.queriesWithResults);
 
       const newScreenshots = {};
       for (let index = 0; index < props.queriesWithResults.length; index++) {
         const [url, hazardCode] = props.queriesWithResults[index];
-        const { screenshot, renderer, scale, scaleBarDom } = await getScreenshot(url, hazardCode);
-        setProgressItemAsComplete(getProgressId(url));
 
+        const { screenshot, renderer, scale, scaleBarDom } = await getScreenshot(url, hazardCode);
+
+        setProgressItemAsComplete(getProgressId(url));
         newScreenshots[hazardCode] = {
           mapImage: screenshot.dataUrl,
           renderer,
@@ -140,13 +137,12 @@ export default props => {
 };
 
 const getScreenshot = async function(url, hazardCode) {
-  console.log('HazardMap.getScreenshot', url);
 
   let renderer;
 
   await map.when();
 
-  for (let index = 0; index < map.layers.length; index++) {
+  map.layers.forEach(async (__, index) => {
     let layer = map.layers.getItemAt(index);
     let testUrl;
     let loadLayer;
@@ -174,9 +170,42 @@ const getScreenshot = async function(url, hazardCode) {
         layer.parent.visible = layer.visible;
       }
     };
-  }
+  })
+
+  // for (let index = 0; index < map.layers.length; index++) {
+  //   //console.log('CHECK', map.layers.getItemAt(index))
+  //   let layer = map.layers.getItemAt(index);
+  //   console.log({layer})
+  //   let testUrl;
+  //   let loadLayer;
+  //   if (layer.type === 'map-image') {
+  //     layer = layer.sublayers.items[0];
+  //     testUrl = layer.url;
+  //     loadLayer = layer.parent;
+  //   } else {
+  //     testUrl = `${layer.url}/${layer.layerId}`;
+  //     loadLayer = layer;
+  //   }
+
+  //   if (url) {
+  //     layer.visible = new RegExp(`${url.toUpperCase()}$`).test(testUrl.toUpperCase());
+  //   } else {
+  //     layer.visible = false;
+  //   }
+
+  //   if (layer.visible) {
+  //     await loadLayer.load();
+
+  //     renderer = layer.renderer;
+
+  //     if (layer.parent) {
+  //       layer.parent.visible = layer.visible;
+  //     }
+  //   };
+  // }
 
   const { reactiveUtils } = await getModules();
+
 
   let originalScale;
   if (hazardCode === config.groundshakingHazardCode) {
@@ -190,13 +219,8 @@ const getScreenshot = async function(url, hazardCode) {
 
 //  await watchUtils.whenFalseOnce(view, 'updating');
 
-  await reactiveUtils.when(
-    () => !view.updating,
-    () => {
-      console.log('VIEWUPDATING', view.updating);
-    }, {
-      once:true
-    });
+  await reactiveUtils.whenOnce(
+    () => !view.updating,);
 
   // map width is 8.5" - 0.78" (default print margins for Chrome on macOS) * 300 dpi
   // height is golden ratio
@@ -212,6 +236,5 @@ const getScreenshot = async function(url, hazardCode) {
     });
   }
 
-  console.log('view.scale', scale, hazardCode, renderer);
   return { screenshot, renderer, scale, scaleBarDom };
 };
